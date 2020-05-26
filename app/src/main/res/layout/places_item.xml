@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_marginTop="4dp"
+    android:layout_margin="8dp"
+    android:visibility="gone"
+    android:id="@+id/rowLinearLayout"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+
+    <ImageView
+        android:id="@+id/iconImageView"
+        android:layout_width="96dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:src="@drawable/common_google_signin_btn_text_dark"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical"
+        android:layout_marginLeft="8dp">
+
+        <TextView
+            android:id="@+id/titleTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Sagan vigar police sation"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/addressTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="682/1 new gali no 5"
+            android:textSize="14sp"/>
+
+        <TextView
+            android:id="@+id/isOpenTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="open"
+            android:paddingBottom="4dp"
+            android:gravity="end"
+            android:textSize="16sp"/>
+
+
+    </LinearLayout>
+
+
+
+
+</LinearLayout>

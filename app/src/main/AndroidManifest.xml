@@ -17,7 +17,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_api" />
+            android:value="AIzaSyBUWcovnL5IstRycYSQFd8DyUUmRpzc7GU" />
 
         <activity android:name=".PermissionsActivity">
             <intent-filter>
@@ -33,7 +33,7 @@
 
 
         </activity>
-        <activity android:name=".MainActivity" />
+
     </application>
 
 </manifest>
