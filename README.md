@@ -1,6 +1,10 @@
 # Covid-nearby-store
-![ScreenShot](https://github.com/raviranjan19750/Covid-nearby-store/blob/master/images/nearby%20atm.jpeg)
-![ScreenShot](https://github.com/raviranjan19750/Covid-nearby-store/blob/master/images/nearby%20cafe.jpeg)
-![ScreenShot](https://github.com/raviranjan19750/Covid-nearby-store/blob/master/images/nearby%20hospitals.jpeg)
-![ScreenShot](https://github.com/raviranjan19750/Covid-nearby-store/blob/master/images/nearby%20super%20markets.jpeg)
+
+<p float="left">
+  <img src="images/nearby atm.jpeg" width="200" />
+  <img src="images/nearby cafe.jpeg" width="200" />
+  <img src="images/nearby hospitals.jpeg" width="200" />
+  <img src="images/nearby super markets.jpeg" width="200" />
+</p>
+
 
