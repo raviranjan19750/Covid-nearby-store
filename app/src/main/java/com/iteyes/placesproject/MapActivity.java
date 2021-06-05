@@ -15,6 +15,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
 import android.util.Log;
@@ -60,10 +61,12 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 import com.mancj.materialsearchbar.MaterialSearchBar;
 
 import com.skyfishjy.library.RippleBackground;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-
-
+import java.util.Map;
 
 
 public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWindowClickListener, OnMapReadyCallback, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMyLocationClickListener, LocationListener, GoogleMap.OnPoiClickListener {
@@ -79,19 +82,22 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
     private Location mLastKnownLocation;
     private LocationCallback locationCallback;
 
-    private MaterialSearchBar materialSearchBar;
     private View mapView;
-    private Button btnFind;
-    private RippleBackground rippleBg;
+
 
     boolean mLocationPermissionGranted = false;
     Marker melbourne;
 
-    RecyclerView mapRecyclerView;
+
+    ArrayList<String> filterTitleList = new ArrayList<>();
+
+    RecyclerView mapRecyclerView,filterRecyclerView, recyclerView;
+
+    ArrayList<List<HashMap<String, String>>> nearbyPlaceList = new ArrayList<>();
+    List<HashMap<String, String>> currentList = new ArrayList<>() ;
+    RecyclerViewAdapter recyclerViewAdapter;
 
 
-
-    private final float DEFAULT_ZOOM = 15;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +105,7 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
 
         setContentView(R.layout.activity_map);
         mapRecyclerView = findViewById(R.id.mapRecyclerView);
+        filterRecyclerView = findViewById(R.id.filterRecyclerView);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -108,6 +115,10 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
         Places.initialize(MapActivity.this, getString(R.string.google_maps_api));
         placesClient = Places.createClient(this);
 
+        filterTitleList.add("grocery_or_supermarket");
+        filterTitleList.add("atm");
+        filterTitleList.add("cafe");
+        filterTitleList.add("hospital");
 
 
 
@@ -118,12 +129,10 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        updateLocationUI();
+       updateLocationUI();
       //  getDeviceLocation();
 
         mMap.setOnPoiClickListener(this);
-        mMap.setOnMyLocationButtonClickListener(this);
-        mMap.setOnMyLocationClickListener(this);
         mMap.setOnInfoWindowClickListener(this);
 
         mMap.setMyLocationEnabled(true);
@@ -152,6 +161,16 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
             @Override
             public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
                 getDeviceLocation();
+
+                recyclerViewAdapter = new RecyclerViewAdapter(currentList, MapActivity.this, mMap);
+                LinearLayoutManager layoutManager = new LinearLayoutManager(MapActivity.this);
+                mapRecyclerView.setLayoutManager(layoutManager);
+                mapRecyclerView.setAdapter(recyclerViewAdapter);
+
+                FilterIssueGridViewAdapter filterIssueGridViewAdapter = new FilterIssueGridViewAdapter(MapActivity.this, filterTitleList, mMap, currentList, nearbyPlaceList, recyclerViewAdapter);
+                LinearLayoutManager horizontalLayoutManager = new LinearLayoutManager(MapActivity.this, LinearLayoutManager.HORIZONTAL, false);
+                filterRecyclerView.setLayoutManager(horizontalLayoutManager);
+                filterRecyclerView.setAdapter(filterIssueGridViewAdapter);
             }
         });
 
@@ -177,6 +196,8 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
             }
         });
 
+
+
     }
 
     @Override
@@ -198,7 +219,13 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
                         if (task.isSuccessful()) {
                             mLastKnownLocation = task.getResult();
                             if (mLastKnownLocation != null) {
-                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude()), DEFAULT_ZOOM));
+
+                                double lat = mLastKnownLocation.getLatitude();
+                                double lng = mLastKnownLocation.getLongitude();
+
+                                LatLng latLng = new LatLng(lat,lng);
+
+                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng,18), 3000, null);
                                 loadNearByPlaces(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
 
                             } else {
@@ -214,9 +241,17 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
                                             return;
                                         }
                                         mLastKnownLocation = locationResult.getLastLocation();
-                                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude()), DEFAULT_ZOOM));
-                                        loadNearByPlaces(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+
+                                        double lat = mLastKnownLocation.getLatitude();
+                                        double lng = mLastKnownLocation.getLongitude();
+
+                                        LatLng latLng = new LatLng(lat,lng);
+
+                                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng,18), 3000, null);
                                         mFusedLocationProviderClient.removeLocationUpdates(locationCallback);
+
+                                        loadNearByPlaces(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+
                                     }
                                 };
                                 mFusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
@@ -231,12 +266,7 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
 
     @Override
     public void onInfoWindowClick(Marker marker) {
-        Toast.makeText(this, "Info window clicked",
-                Toast.LENGTH_SHORT).show();
-
-     //   melbourne.remove();
-        Log.e("TAG", "onInfoWindowClick: " + melbourne.getSnippet() );
-        Log.e("TAG", "onInfoWindowClick: " + melbourne.getTag() );
+       marker.hideInfoWindow();
     }
 
     private void getLocationPermission() {
@@ -300,39 +330,6 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
 
         Log.e("TAG", "onPoiClick: " + poi.placeId );
 
-        final List<Place.Field> placeFields = Arrays.asList(Place.Field.LAT_LNG , Place.Field.OPENING_HOURS, Place.Field.NAME, Place.Field.RATING, Place.Field.TYPES);
-
-        FetchPlaceRequest request = FetchPlaceRequest.newInstance(poi.placeId, placeFields);
-        placesClient.fetchPlace(request).addOnSuccessListener(new OnSuccessListener<FetchPlaceResponse>() {
-            @Override
-            public void onSuccess(FetchPlaceResponse fetchPlaceResponse) {
-                Place place = fetchPlaceResponse.getPlace();
-
-                for (int i = 0; i <placeFields.size() ; i++) {
-                    Log.e("mytag", "Place found 1: " + place.getName());
-                    Log.e("mytag", "Place found 2: " + place.getRating());
-                    Log.e("mytag", "Place found 3: " + place.getOpeningHours());
-                }
-
-                LatLng latLngOfPlace = place.getLatLng();
-                if (latLngOfPlace != null) {
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLngOfPlace, DEFAULT_ZOOM));
-                }
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                if (e instanceof ApiException) {
-                    ApiException apiException = (ApiException) e;
-                    apiException.printStackTrace();
-                    int statusCode = apiException.getStatusCode();
-                    Log.i("mytag", "place not found: " + e.getMessage());
-                    Log.i("mytag", "status code: " + statusCode);
-                }
-            }
-        });
-
-
 
         LatLng MELBOURNE = new LatLng(poi.latLng.latitude, poi.latLng.longitude);
         melbourne = mMap.addMarker(new MarkerOptions()
@@ -354,9 +351,6 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
 
         Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
         Log.d("TAG", "onMyLocationClick: " + location.getLatitude() + " + " + location.getLongitude());
-
-        loadNearByPlaces(location.getLatitude(), location.getLongitude());
-
 
     }
 
@@ -392,40 +386,30 @@ public class MapActivity extends AppCompatActivity implements GoogleMap.OnInfoWi
     }
 
 
-    private boolean isGooglePlayServicesAvailable() {
-        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(this);
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (apiAvailability.isUserResolvableError(resultCode)) {
-                apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show();
-            } else {
-                Log.i("TAG", "This device is not supported.");
-                finish();
-            }
-            return false;
-        }
-        return true;
-    }
-
     private void loadNearByPlaces(double latitude, double longitude) {
 //YOU Can change this type at your own will, e.g hospital, cafe, restaurant.... and see how it all works
-        String type = "grocery_or_supermarket,atm";
-        StringBuilder googlePlacesUrl = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
-        googlePlacesUrl.append("location=").append(latitude).append(",").append(longitude);
-        googlePlacesUrl.append("&radius=").append(500);
-        googlePlacesUrl.append("&types=").append(type);
-        googlePlacesUrl.append("&sensor=true");
-        googlePlacesUrl.append("&key=" + "AIzaSyBUWcovnL5IstRycYSQFd8DyUUmRpzc7GU");
+       // String type = "grocery_or_supermarket,atm";
 
-        Object dataTransfer[] = new Object[2];
+        Object dataTransfer[] = new Object[filterTitleList.size()+1];
 
         dataTransfer[0] = mMap;
-        dataTransfer[1] = googlePlacesUrl.toString();
 
-        GetNearbyPlacesData getNearbyPlacesData = new GetNearbyPlacesData(MapActivity.this, mapRecyclerView);
+        for (int i = 0; i <filterTitleList.size() ; i++) {
+
+            StringBuilder googlePlacesUrl = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+            googlePlacesUrl.append("location=").append(latitude).append(",").append(longitude);
+            googlePlacesUrl.append("&radius=").append(500);
+            googlePlacesUrl.append("&types=").append(filterTitleList.get(i));
+            googlePlacesUrl.append("&sensor=true");
+            googlePlacesUrl.append("&key=" + "AIzaSyBUWcovnL5IstRycYSQFd8DyUUmRpzc7GU");
+
+            dataTransfer[i+1] = googlePlacesUrl.toString();
+
+        }
+
+        GetNearbyPlacesData getNearbyPlacesData = new GetNearbyPlacesData(MapActivity.this, recyclerViewAdapter, nearbyPlaceList, currentList);
         getNearbyPlacesData.execute(dataTransfer);
 
-        Log.e("TAG", "loadNearByPlaces: " + true );
 
 
     }

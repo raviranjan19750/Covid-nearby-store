@@ -16,6 +16,9 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.libraries.places.api.model.Place;
 
 import java.util.HashMap;
@@ -26,11 +29,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     private List<HashMap<String, String>> placesList;
     private Context context;
+    private GoogleMap mMap;
 
 
-    public RecyclerViewAdapter(List<HashMap<String, String>> list, Context ctx) {
+    public RecyclerViewAdapter(List<HashMap<String, String>> list, Context ctx, GoogleMap mMap) {
         placesList = list;
         context = ctx;
+        this.mMap = mMap;
     }
 
     @NonNull
@@ -49,25 +54,24 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         final int itemPos = position;
 
         Boolean isOpen;
-        HashMap<String, String> place = placesList.get(position);
+        final HashMap<String, String> place = placesList.get(position);
         if (place.get("place_name") != null) {
 
             holder.rowLinearLayout.setVisibility(View.VISIBLE);
             holder.titleTextView.setText(String.valueOf(place.get("place_name")));
             holder.addressTextView.setText(String.valueOf(place.get("vicinity")));
+            holder.rowLinearLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                    showOnMap(place);
+                }
+            });
+
 
             if (place.containsValue("icon"))
                 Glide.with(context).asBitmap().load(String.valueOf(place.get("icon"))).into(holder.iconImageView);
 
-            if (place.containsValue("isOpen")) {
-
-                if (place.get("isOpen").equalsIgnoreCase("true")){
-                    holder.isOpenTextView.setText(place.get("isOpen"));
-                }else {
-                    holder.isOpenTextView.setText(place.get("isOpen"));
-                }
-
-            }
 
         } else {
             holder.rowLinearLayout.setVisibility(View.GONE);
@@ -80,7 +84,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         public TextView titleTextView;
         public TextView addressTextView;
-        public TextView isOpenTextView;
         public ImageView iconImageView;
         public LinearLayout rowLinearLayout;
 
@@ -92,7 +95,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
             titleTextView = view.findViewById(R.id.titleTextView);
             addressTextView = view.findViewById(R.id.addressTextView);
-            isOpenTextView = view.findViewById(R.id.isOpenTextView);
             iconImageView = view.findViewById(R.id.iconImageView);
             rowLinearLayout = view.findViewById(R.id.rowLinearLayout);
 
@@ -103,6 +105,17 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public int getItemCount() {
         return placesList.size();
+    }
+
+    private void showOnMap( HashMap<String, String> place){
+
+        double lat = Double.parseDouble(place.get("lat"));
+        double lng = Double.parseDouble(place.get("lng"));
+
+        LatLng latLng = new LatLng(lat,lng);
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18), 2500, null);
+
     }
 
 }

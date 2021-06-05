@@ -13,86 +13,110 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 
 class GetNearbyPlacesData extends AsyncTask<Object, String, String> {
 
-    private String googlePlacesData;
+    private ArrayList<String> googlePlacesData = new ArrayList<>();
     private GoogleMap mMap;
-    String url;
+    ArrayList<String> url = new ArrayList<>();
     Context context;
-    RecyclerView recyclerView;
 
-    public GetNearbyPlacesData(Context context, RecyclerView recyclerView) {
+
+    ArrayList<List<HashMap<String, String>>> nearbyPlaceList ;
+    List<HashMap<String, String>> currentList  ;
+
+    RecyclerViewAdapter recyclerViewAdapter;
+
+
+
+    public GetNearbyPlacesData(Context context, RecyclerViewAdapter recyclerViewAdapter , ArrayList<List<HashMap<String, String>>> nearbyPlaceList,  List<HashMap<String, String>> currentList ) {
         this.context = context;
-        this.recyclerView = recyclerView;
+        this.recyclerViewAdapter = recyclerViewAdapter;
+        this.nearbyPlaceList = nearbyPlaceList;
+        this.currentList = currentList;
+
     }
 
     @Override
     protected String doInBackground(Object... objects) {
         mMap = (GoogleMap) objects[0];
-        url = (String) objects[1];
+
+        url.clear();
+        for (int i = 1; i <objects.length ; i++) {
+
+            url.add((String) objects[i]);
+        }
 
         DownloadURL downloadURL = new DownloadURL();
+
         try {
-            googlePlacesData = downloadURL.readUrl(url);
+
+            for (int i = 0; i <url.size() ; i++) {
+
+                googlePlacesData.add(downloadURL.readUrl(url.get(i)));
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return googlePlacesData;
+        return "";
     }
 
     @Override
     protected void onPostExecute(String s) {
 
-        List<HashMap<String, String>> nearbyPlaceList;
         DataParser parser = new DataParser();
-        Log.e("TAG", "onPostExecute: " + s);
-        nearbyPlaceList = parser.parse(s);
-        Log.e("TAG", "onPostExecute 1: " + nearbyPlaceList.toString());
-        Log.d("nearbyplacesdata", "called parse method");
 
-        showNearbyPlaces(nearbyPlaceList);
-    }
+        for (int i = 0; i <googlePlacesData.size() ; i++) {
 
-    private void showNearbyPlaces(List<HashMap<String, String>> nearbyPlaceList) {
-        Log.e("TAG", "onPostExecute 2: " + nearbyPlaceList.toString());
-
-        for (int i = 0; i < nearbyPlaceList.size(); i++) {
-            Log.e("TAG", "onPostExecute 3: " + i + " " + nearbyPlaceList.get(i).toString());
-
-            MarkerOptions markerOptions = new MarkerOptions();
-            HashMap<String, String> googlePlace = nearbyPlaceList.get(i);
-
-            if (googlePlace.get("place_name") != null) {
-
-                String placeName = String.valueOf(googlePlace.get("place_name"));
-                String vicinity = String.valueOf(googlePlace.get("vicinity"));
-
-                double lat = Double.parseDouble(googlePlace.get("lat"));
-                double lng = Double.parseDouble(googlePlace.get("lng"));
-
-                LatLng latLng = new LatLng(lat, lng);
-                markerOptions.position(latLng);
-                markerOptions.title(placeName);
-                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-
-                mMap.addMarker(markerOptions);
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-                mMap.animateCamera(CameraUpdateFactory.zoomTo(10));
-            }
-
+            nearbyPlaceList.add(parser.parse(googlePlacesData.get(i)));
 
         }
 
-        RecyclerViewAdapter recyclerViewAdapter = new RecyclerViewAdapter(nearbyPlaceList, context);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(context);
-        recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setAdapter(recyclerViewAdapter);
+        currentList.clear();
 
+        showNearbyPlaces();
+    }
+
+    private void showNearbyPlaces() {
+
+        for (int i = 0; i < nearbyPlaceList.size(); i++) {
+
+            for (int j = 0; j <nearbyPlaceList.get(i).size() ; j++) {
+
+                MarkerOptions markerOptions = new MarkerOptions();
+
+                HashMap<String, String> googlePlace = nearbyPlaceList.get(i).get(j);
+
+                if (googlePlace.get("place_name") != null) {
+
+                    currentList.add(nearbyPlaceList.get(i).get(j));
+
+                    String placeName = String.valueOf(googlePlace.get("place_name"));
+
+                    double lat = Double.parseDouble(googlePlace.get("lat"));
+                    double lng = Double.parseDouble(googlePlace.get("lng"));
+
+                    LatLng latLng = new LatLng(lat, lng);
+                    markerOptions.position(latLng);
+                    markerOptions.title(placeName);
+                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+
+                    mMap.addMarker(markerOptions);
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15), 5000, null);
+
+                }
+
+            }
+
+        }
+
+        recyclerViewAdapter.notifyDataSetChanged();
 
     }
 }
